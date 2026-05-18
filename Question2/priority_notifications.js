@@ -2,35 +2,30 @@ const axios = require("axios");
 
 const API_URL = "http://4.224.186.213/evaluation-service/notifications";
 
-const TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJNYXBDbGFpbXMiOnsiYXVkIjoiaHR0cDovLzIwLjI0NC41Ni4xNDQvZXZhbHVhdGlvbi1zZXJ2aWNlIiwiZW1haWwiOiJwYXdhcmFuc2hpa2ExNTEyQGdtYWlsLmNvbSIsImV4cCI6MTc3OTEwMzUxNiwiaWF0IjoxNzc5MTAyNjE2LCJpc3MiOiJBZmZvcmQgTWVkaWNhbCBUZWNobm9sb2dpZXMgUHJpdmF0ZSBMaW1pdGVkIiwianRpIjoiNjNjNTQ5YjEtZmUyNy00NDEyLTljM2EtNDJkMWRhODIzOTE2IiwibG9jYWxlIjoiZW4tSU4iLCJuYW1lIjoiYW5zaGlrYSBwYXdhciIsInN1YiI6IjVjYmRmZGQwLTA2NWItNGE2Zi05OWIzLTRmMjdmMmYxNjVlYSJ9LCJlbWFpbCI6InBhd2FyYW5zaGlrYTE1MTJAZ21haWwuY29tIiwibmFtZSI6ImFuc2hpa2EgcGF3YXIiLCJyb2xsTm8iOiJ0aXQ0NCIsImFjY2Vzc0NvZGUiOiJmekVRU1EiLCJjbGllbnRJRCI6IjVjYmRmZGQwLTA2NWItNGE2Zi05OWIzLTRmMjdmMmYxNjVlYSIsImNsaWVudFNlY3JldCI6ImZLSmR6Vkp3S2pxbmtKQ1UifQ.kII7g-zDFchnOKH6zqNwehC-6OlV7gAxD4SR1R85X8s";
+const TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJNYXBDbGFpbXMiOnsiYXVkIjoiaHR0cDovLzIwLjI0NC41Ni4xNDQvZXZhbHVhdGlvbi1zZXJ2aWNlIiwiZW1haWwiOiJwYXdhcmFuc2hpa2ExNTEyQGdtYWlsLmNvbSIsImV4cCI6MTc3OTEwNDQ0OCwiaWF0IjoxNzc5MTAzNTQ4LCJpc3MiOiJBZmZvcmQgTWVkaWNhbCBUZWNobm9sb2dpZXMgUHJpdmF0ZSBMaW1pdGVkIiwianRpIjoiOTBjZTFiMGYtZjY2Yi00ZTRjLThmMjAtNGIzMzQwNWUxOGRmIiwibG9jYWxlIjoiZW4tSU4iLCJuYW1lIjoiYW5zaGlrYSBwYXdhciIsInN1YiI6IjVjYmRmZGQwLTA2NWItNGE2Zi05OWIzLTRmMjdmMmYxNjVlYSJ9LCJlbWFpbCI6InBhd2FyYW5zaGlrYTE1MTJAZ21haWwuY29tIiwibmFtZSI6ImFuc2hpa2EgcGF3YXIiLCJyb2xsTm8iOiJ0aXQ0NCIsImFjY2Vzc0NvZGUiOiJmekVRU1EiLCJjbGllbnRJRCI6IjVjYmRmZGQwLTA2NWItNGE2Zi05OWIzLTRmMjdmMmYxNjVlYSIsImNsaWVudFNlY3JldCI6ImZLSmR6Vkp3S2pxbmtKQ1UifQ.xR1FAef_3xyYPcC1mrrfaaExkF1YhRm314QB3Egts5w";
 
 function calculatePriority(notification) {
 
     let score = 0;
 
-    // Weight based on notification type
-    if (notification.type === "Placement") {
+    if (notification.Type === "Placement") {
         score += 50;
-    } else if (notification.type === "Result") {
+    } else if (notification.Type === "Result") {
         score += 40;
-    } else if (notification.type === "Event") {
+    } else if (notification.Type === "Event") {
         score += 30;
     } else {
         score += 10;
     }
 
-    // Unread notifications get extra priority
-    if (!notification.isRead) {
-        score += 20;
-    }
+    const notificationTime = new Date(notification.Timestamp).getTime();
 
-    // Recent notifications get higher priority
-    const createdTime = new Date(notification.createdAt).getTime();
     const currentTime = new Date().getTime();
 
-    const hoursDifference = (currentTime - createdTime) / (1000 * 60 * 60);
+    const hourDifference =
+        (currentTime - notificationTime) / (1000 * 60 * 60);
 
-    if (hoursDifference <= 24) {
+    if (hourDifference <= 24) {
         score += 20;
     }
 
@@ -47,43 +42,32 @@ async function fetchNotifications() {
             }
         });
 
-       const notifications = response.data.notifications;
+        const notifications = response.data.notifications || [];
 
-        // Only unread notifications
-        const unreadNotifications = notifications.filter(
-            notification => notification.isRead === false
-        );
-
-        // Calculate priority score
-        unreadNotifications.forEach(notification => {
-            notification.priorityScore = calculatePriority(notification);
+        notifications.forEach(notification => {
+            notification.priorityScore =
+                calculatePriority(notification);
         });
 
-        // Sort by priority
-        unreadNotifications.sort(
+        notifications.sort(
             (a, b) => b.priorityScore - a.priorityScore
         );
 
-        // Get top 10
-        const topNotifications = unreadNotifications.slice(0, 10);
+        const topNotifications = notifications.slice(0, 10);
 
-       if (topNotifications.length === 0) {
-       console.log("No unread notifications found");
-       return;
-}
         console.log("\nTop 10 Priority Notifications:\n");
 
         topNotifications.forEach((notification, index) => {
 
-            console.log(`${index + 1}. ${notification.title}`);
+            console.log(`${index + 1}. ${notification.Type}`);
 
-            console.log(`Type: ${notification.type}`);
+            console.log(`Message: ${notification.Message}`);
 
             console.log(`Priority Score: ${notification.priorityScore}`);
 
-            console.log(`Message: ${notification.message}`);
+            console.log(`Timestamp: ${notification.Timestamp}`);
 
-            console.log("-----------------------------------");
+            console.log("--------------------------------");
         });
 
     } catch (error) {
