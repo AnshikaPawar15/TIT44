@@ -303,3 +303,5 @@ To improve notification system performance:
 - Optimize filtering and sorting operations
 
 These optimizations improve scalability and reduce database load for large-scale systems.
+
+This architecture improves scalability, reliability, and overall system performance.
